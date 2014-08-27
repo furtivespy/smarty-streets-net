@@ -79,6 +79,44 @@ namespace Rentler.SmartyStreets
 				new SmartyStreetsAddress[0];
 		}
 
+        /// <summary>
+        /// Attempts to resolve a street address to a verified one.
+        /// Makes requests to https://api.smartystreets.com/street-address.
+        /// See http://smartystreets.com/kb/liveaddress-api/rest-endpoint for
+        /// documentation on this endpoint.
+        /// </summary>
+        /// <param name="street">The street address, or a single-line (freeform) address.</param>
+        /// <param name="street">The second line of address (e.g. suite, floor, PO BOX)</param>
+        /// <param name="city">The city name.</param>
+        /// <param name="state">The state name.</param>
+        /// <param name="zipcode">The ZIP code.</param>
+        /// <returns>An enumerable list of possible addresses. Generally, one entry 
+        /// will be returned, but results can include up to five possibles. If none are found,
+        /// the array will be empty.</returns>
+        public async Task<IEnumerable<SmartyStreetsAddress>> GetStreetAddress(
+            string street = null, string street2 = null, string city = null,
+            string state = null, string zipcode = null)
+        {
+            var args = SetAuth();
+            args["street"] = street;
+            args["street2"] = street2;
+            args["city"] = city;
+            args["state"] = state;
+            args["zipcode"] = zipcode;
+            args["candidates"] = "5";
+
+            var url = client.CreateAddress("street-address", args);
+            var response = await client.Post(url);
+
+            //special case
+            if (response.Length == 3)
+                return new SmartyStreetsAddress[0];
+
+            return JsonSerializer.DeserializeFromStream<SmartyStreetsAddress[]>(response)
+                ??
+                new SmartyStreetsAddress[0];
+        }
+
 		/// <summary>
 		/// Allows you to identify cities with ZIP codes, and vice-versa. 
 		/// It also provides approximate geo-coordinates (latitude/longitude). 
